@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'empha': '#ff385c'
+        'sidebar-background': '#ff385c'
       }
     },
   },
