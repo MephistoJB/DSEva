@@ -5,10 +5,11 @@ services:
     volumes:
       - ./django:/usr/src/dseva_backend
     ports:
-      - 8000:8000
+      - 9000:8000
       - 3000:3000
     env_file:
       - ./.env.dev
+      - ./.env.secret
     depends_on:
       - db
   db:

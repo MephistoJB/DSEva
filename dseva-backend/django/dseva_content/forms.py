@@ -10,7 +10,7 @@ class RepositoryForm(ModelForm):
             'title',
             'foreign_id',
             #'description',
-            #'ownerD',
+            'ownerD',
             'parent',
             #'watched_count',
             #'stars_count',

@@ -55,12 +55,25 @@ def getRepo(id: int):
     repo = con.get_repo(id)
     return repo
 
+def getDev(id: int):
+    id = int(id)
+    dev = con.get_user_by_id(id)
+    return dev
+
 def repoToJSON(repo: Repository):
     return None
 
 def getForkIDs(repo):
     if(repo.forks_count>0):
         response = requests.get(repo.forks_url)
+        if response and response.status_code==200 and response.text !="[]":
+            return response.json()
+    else:
+        return []
+
+def getRepoIDs(dev):
+    if(dev.public_repos>0):
+        response = requests.get(dev.repos_url)
         if response and response.status_code==200 and response.text !="[]":
             return response.json()
     else:

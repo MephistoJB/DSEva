@@ -1,3 +1,4 @@
-PyGithub==2.3.0
-requests==2.32.3
-debugpy==1.5.1
+PyGithub
+requests
+debugpy
+flask[async]

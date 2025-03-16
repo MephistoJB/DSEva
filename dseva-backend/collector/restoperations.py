@@ -18,10 +18,10 @@ def get_alldevelopers():
 
 def create_and_update_repository(repo: Repository):
     if(getattr(repo, 'full_name', None)):
-        data = {"title":repo.full_name, "foreign_id":repo.id}
+        data = {"title":repo.full_name, "foreign_id":repo.id, "ownerD":repo.owner.id}
     else:
-        data = {"title":repo['full_name'], "foreign_id":repo['id']}
-        if(repo['parentGUID']):
+        data = {"title":repo['full_name'], "foreign_id":repo['id'], "ownerD":repo['owner']['id']}
+        if repo.get('parentGUID'):
             data["parent"] = repo['parentGUID']
     create_and_update_repository_url = api_url + "create_and_update_repository/"
     response = requests.post(create_and_update_repository_url, data = data)

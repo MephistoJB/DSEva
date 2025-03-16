@@ -34,6 +34,7 @@ def developer_list(request):
 @authentication_classes([])
 @permission_classes([])
 def next_element(request):
+
     repository = Repository.objects.annotate(
         new_order=Case(
             When(new=True, then=0),  # Wenn new=True, dann Reihenfolge 0
@@ -42,7 +43,18 @@ def next_element(request):
         )
     ).filter(lastVisit__lt=datetime.datetime.now() - datetime.timedelta(days=1)).order_by('new_order', 'lastVisit').first()
 
-    serializer = RepositoryDetailSerializer(repository)
+    developer = Developer.objects.annotate(
+        new_order=Case(
+            When(new=True, then=0),  # Wenn new=True, dann Reihenfolge 0
+            default=1,               # Standardreihenfolge für alles andere
+            output_field=models.IntegerField()
+        )
+    ).order_by('new_order', 'lastVisit').first()
+    #).filter(lastVisit__lt=datetime.datetime.now() - datetime.timedelta(days=1)).order_by('new_order', 'lastVisit').first()
+    #if developer.lastVisit>repository.lastVisit:
+    #serializer = RepositoryDetailSerializer(repository)
+    #else:
+    serializer = DeveloperDetailSerializer(developer)
     return JsonResponse({
         'data': serializer.data
     })
@@ -68,14 +80,13 @@ def create_and_update_repository(request):
     repository = Repository.objects.filter(foreign_id=fi).first()
     post_data = dict(request.POST)
     if 'ownerD' in post_data:
-        post_data['ownerD']=developer.id
         di = request.POST.get('ownerD')
         developer = Developer.objects.filter(foreign_id=di).first()
         if not developer:
             developer = Developer.objects.create()
             developer.foreign_id = di
             developer.save()
-    
+        post_data['ownerD']=developer.id
     if(repository):
         form = RepositoryForm(post_data, instance=repository)
     else:

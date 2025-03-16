@@ -5,9 +5,6 @@ def startcollector():
     try:
         authenticate()
 
-    
-
-
         run = True
         while run:
             rl=getRateLimit()
@@ -16,16 +13,24 @@ def startcollector():
             else:
                 ne = getNextElement()
                 if(ne):
-                    neGH = getRepo(ne["foreign_id"])
-                    #print(ne)
-                    #print(neGH)
-                    parent = getParent(neGH)
-                    if(parent):
-                        create_and_update_repository(parent)
-                    forks = getForkIDs(neGH)
-                    for fork in forks:
-                        fork["parentGUID"] = ne["id"]
-                        create_and_update_repository(fork)
+                    if ne["type"]=='Developer':
+                        neGH = getDev(ne["foreign_id"])
+                        repos = getRepoIDs(neGH)
+                        for repo in repos:
+                            repo["devGUID"] = ne["id"]
+                            create_and_update_repository(repo)
+                    else:
+                        neGH = getRepo(ne["foreign_id"])
+                        #print(ne)
+                        #print(neGH)
+                        parent = getParent(neGH)
+                        if(parent):
+                            create_and_update_repository(parent)
+                        forks = getForkIDs(neGH)
+                        for fork in forks:
+                            fork["parentGUID"] = ne["id"]
+                            create_and_update_repository(fork)
+                        create_and_update_repository(neGH)
                 else:
                     repo = getFallback()
                     if repo:

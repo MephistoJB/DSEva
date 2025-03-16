@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
-from .models import*
+from dseva_content.models.developer import Developer
+from dseva_content.models.repository import *
+
 
 class RepositoriesListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,6 +10,7 @@ class RepositoriesListSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'title',
+            'foreign_id',
             'firstVisit',
             'lastVisit'
         )
@@ -20,7 +23,20 @@ class RepositoryDetailSerializer(serializers.ModelSerializer):
             'title',
             'foreign_id',
             'firstVisit',
-            'lastVisit'
+            'lastVisit',
+            'type'
+        )
+
+class DeveloperDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Repository
+        fields = (
+            'id',
+            'title',
+            'foreign_id',
+            'firstVisit',
+            'lastVisit',
+            'type'
         )
 
 
