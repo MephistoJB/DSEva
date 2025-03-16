@@ -68,6 +68,8 @@ jobs:
     needs: check-release
     if: ${{ needs.check-release.outputs.new_version != '' }}
     runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ needs.check-release.outputs.new_version }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -101,6 +103,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
+      - name: Debugging Output der neuen Version
+        run: |
+          new_version="${{ needs.create-release.outputs.new_version }}"
+          if [[ -z "$new_version" ]]; then
+            new_version="latest"
+          fi
+          echo "New version: $new_version"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v4
@@ -110,7 +120,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}},enable=true
             type=raw,value=latest,enable=true
-            type=raw,value=${{ needs.check-release.outputs.new_version }},enable=true
+            type=raw,value=${{ needs.create-release.outputs.new_version }},enable=true
       
       - name: Debug extracted metadata
         run: |
@@ -135,7 +145,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: ./dseva-backend
+          context: ./dseva-backend/django
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
@@ -155,6 +165,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
+      - name: Debugging Output der neuen Version
+        run: |
+          new_version="${{ needs.create-release.outputs.new_version }}"
+          if [[ -z "$new_version" ]]; then
+            new_version="latest"
+          fi
+          echo "New version: $new_version"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v4
@@ -164,6 +182,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}},enable=true
             type=raw,value=latest,enable=true
+            type=raw,value=${{ needs.create-release.outputs.new_version }},enable=true
       
       - name: Debug extracted metadata
         run: |
@@ -182,7 +201,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: ./collector
+          context: ./dseva-backend/collector
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
