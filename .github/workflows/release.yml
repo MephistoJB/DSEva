@@ -30,7 +30,7 @@ jobs:
 
           echo "### Extracting version title..."
           version_title=$(awk -v ver="$latest_version" '
-            $0 ~ ver {getline; while ($0 ~ /^-/) getline; print $0}' releasenotes)
+            $0 ~ ver {while (getline && $0 ~ /^-/); print $0}' releasenotes)
           echo "Version title: $version_title"
 
           echo "### Extracting version body..."
