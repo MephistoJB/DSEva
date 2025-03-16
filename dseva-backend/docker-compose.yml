@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: ./django
@@ -21,9 +19,6 @@ services:
       - POSTGRES_USER=postgresuser
       - POSTGRES_PASSWORD=postgrespassword
       - POSTGRES_DB=dsevadb
-<<<<<<< HEAD
-
-=======
   collector:
     build: ./collector
     #command: python collector.py
@@ -35,6 +30,5 @@ services:
       - ./.env.dev
     depends_on:
       - web
->>>>>>> 098b29c (Enabled remote debugging and github sync of the first objects)
 volumes:
   postgres_data:
