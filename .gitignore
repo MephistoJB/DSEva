@@ -11,5 +11,4 @@ dseva-backend/.env.dev
 dseva-backend/.env.dev
 dseva-backend/.env.dev
 dseva-backend/.env.dev
-.env.dev
-dseva-backend/.env.dev
+dseva-backend/.env_full.dev
