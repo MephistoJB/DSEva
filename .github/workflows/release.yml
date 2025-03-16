@@ -28,13 +28,25 @@ jobs:
           version_title=$(awk -v ver="$latest_version" '$0 ~ ver {getline; print $0}' releasenotes)
           version_body=$(awk -v ver="$latest_version" '/^v[0-9]+\.[0-9]+\.[0-9]+/ {if (p) exit; if ($1 == ver) p=1; next} p' releasenotes | sed ':a;N;$!ba;s/\n/\\n/g')
           last_release=$(gh release list --limit 1 | awk '{print $1}')
-          echo "Latest version in file: $latest_version"
-          echo "Last release on GitHub: $last_release"
-          if [ "$latest_version" != "$last_release" ]; then
-            echo "new_version=$latest_version" >> $GITHUB_ENV
-            echo "version_title=$version_title" >> $GITHUB_ENV
-            echo "version_body=$version_body" >> $GITHUB_ENV
+          
+          if [ -z "$last_release" ]; then
+            echo "No previous release found, using latest version from releasenotes."
+            last_release=$latest_version
           fi
+          
+          if [ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]; then
+            new_version="${last_release}-m"
+          else
+            if [ "$latest_version" != "$last_release" ]; then
+              new_version=$latest_version
+            else
+              new_version=""
+            fi
+          fi
+          
+          echo "new_version=$new_version" >> $GITHUB_ENV
+          echo "version_title=$version_title" >> $GITHUB_ENV
+          echo "version_body=$version_body" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -119,6 +131,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           target: prod
+
 
   # build-frontend:
   #   needs: create-release
