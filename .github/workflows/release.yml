@@ -108,9 +108,23 @@ jobs:
           images: |
             ${{ secrets.DOCKERHUB_USERNAME }}/dseva-backend
           tags: |
-            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{version}},enable=true
+            type=raw,value=latest,enable=true
       
+      - name: Debug extracted metadata
+        run: |
+          echo "### Debugging extracted metadata..."
+          echo "Extracted Tags: ${{ steps.meta.outputs.tags }}"
+          echo "Extracted Labels: ${{ steps.meta.outputs.labels }}"
+          echo "Extracted Version: ${{ steps.meta.outputs.version }}"
+
+      - name: Ensure at least one tag exists
+        run: |
+          if [[ -z "${{ steps.meta.outputs.tags }}" ]]; then
+            echo "No tags found, setting fallback tag..."
+            echo "tags=latest" >> $GITHUB_ENV
+          fi
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
@@ -141,9 +155,23 @@ jobs:
           images: |
             ${{ secrets.DOCKERHUB_USERNAME }}/collector
           tags: |
-            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{version}},enable=true
+            type=raw,value=latest,enable=true
       
+      - name: Debug extracted metadata
+        run: |
+          echo "### Debugging extracted metadata..."
+          echo "Extracted Tags: ${{ steps.meta.outputs.tags }}"
+          echo "Extracted Labels: ${{ steps.meta.outputs.labels }}"
+          echo "Extracted Version: ${{ steps.meta.outputs.version }}"
+
+      - name: Ensure at least one tag exists
+        run: |
+          if [[ -z "${{ steps.meta.outputs.tags }}" ]]; then
+            echo "No tags found, setting fallback tag..."
+            echo "tags=latest" >> $GITHUB_ENV
+          fi
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
@@ -175,8 +203,8 @@ jobs:
   #         images: |
   #           ${{ secrets.DOCKERHUB_USERNAME }}/frontend
   #         tags: |
-  #           type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
-  #           type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+  #           type=semver,pattern={{version}},enable=true
+  #           type=raw,value=latest,enable=true
   #
   #     - name: Build and push
   #       uses: docker/build-push-action@v4
