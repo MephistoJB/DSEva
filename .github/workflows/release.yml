@@ -1,45 +1,154 @@
+name: Release Workflow
+
 on:
-  release:
-    types: [published]  # Only triggers when a release is published
-  workflow_dispatch: # <-- Erlaubt manuelles Starten
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
 jobs:
-  docker:
+  check-release:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.check_version.outputs.new_version }}
+      version_title: ${{ steps.check_version.outputs.version_title }}
+      version_body: ${{ steps.check_version.outputs.version_body }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Latest Version from releasenotes
+        id: check_version
+        run: |
+          latest_version=$(awk '/^v[0-9]+\.[0-9]+\.[0-9]+/ {print $1; exit}' releasenotes)
+          version_title=$(awk -v ver="$latest_version" '$0 ~ ver {getline; print $0}' releasenotes)
+          version_body=$(awk -v ver="$latest_version" '/^v[0-9]+\.[0-9]+\.[0-9]+/ {if (p) exit; if ($1 == ver) p=1; next} p' releasenotes | sed ':a;N;$!ba;s/\n/\\n/g')
+          last_release=$(gh release list --limit 1 | awk '{print $1}')
+          echo "Latest version in file: $latest_version"
+          echo "Last release on GitHub: $last_release"
+          if [ "$latest_version" != "$last_release" ]; then
+            echo "new_version=$latest_version" >> $GITHUB_ENV
+            echo "version_title=$version_title" >> $GITHUB_ENV
+            echo "version_body=$version_body" >> $GITHUB_ENV
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-release:
+    needs: check-release
+    if: ${{ needs.check-release.outputs.new_version != '' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release and Tag
+        run: |
+          gh release create "${{ needs.check-release.outputs.new_version }}" \
+            --title "${{ needs.check-release.outputs.version_title }}" \
+            --notes "${{ needs.check-release.outputs.version_body }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-backend:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          
+      
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/paperless-pipeline
+            ${{ secrets.DOCKERHUB_USERNAME }}/dseva-backend
           tags: |
-            type=schedule,pattern=nightly
             type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
             type=raw,value=latest,enable=${{ github.event_name == 'release' }}
-            
+      
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./dseva-backend
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          target: prod  # Wählt explizit das 'prod'-Stage aus dem Dockerfile
+          target: prod
+
+  build-collector:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/collector
+          tags: |
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: ./collector
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          target: prod
+
+  # build-frontend:
+  #   needs: create-release
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Log in to Docker Hub
+  #       uses: docker/login-action@v2
+  #       with:
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_TOKEN }}
+  #
+  #     - name: Extract metadata
+  #       id: meta
+  #       uses: docker/metadata-action@v4
+  #       with:
+  #         images: |
+  #           ${{ secrets.DOCKERHUB_USERNAME }}/frontend
+  #         tags: |
+  #           type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+  #           type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+  #
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v4
+  #       with:
+  #         context: ./frontend
+  #         push: true
+  #         platforms: linux/amd64,linux/arm64
+  #         tags: ${{ steps.meta.outputs.tags }}
+  #         labels: ${{ steps.meta.outputs.labels }}
+  #         target: prod
