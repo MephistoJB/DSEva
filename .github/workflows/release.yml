@@ -24,16 +24,27 @@ jobs:
       - name: Extract Latest Version from releasenotes
         id: check_version
         run: |
+          echo "### Checking latest version from releasenotes..."
           latest_version=$(awk '/^v[0-9]+\.[0-9]+\.[0-9]+/ {print $1; exit}' releasenotes)
+          echo "Latest version from releasenotes: $latest_version"
+
+          echo "### Extracting version title..."
           version_title=$(awk -v ver="$latest_version" '$0 ~ ver {getline; print $0}' releasenotes)
+          echo "Version title: $version_title"
+
+          echo "### Extracting version body..."
           version_body=$(awk -v ver="$latest_version" '/^v[0-9]+\.[0-9]+\.[0-9]+/ {if (p) exit; if ($1 == ver) p=1; next} p' releasenotes | sed ':a;N;$!ba;s/\n/\\n/g')
+          echo "Version body: $version_body"
+
+          echo "### Fetching latest GitHub release..."
           last_release=$(gh release list --limit 1 | awk '{print $1}')
-          
+          echo "Latest release on GitHub: $last_release"
+
           if [ -z "$last_release" ]; then
             echo "No previous release found, using latest version from releasenotes."
             last_release=$latest_version
           fi
-          
+
           if [ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]; then
             new_version="${last_release}-m"
           else
@@ -43,7 +54,8 @@ jobs:
               new_version=""
             fi
           fi
-          
+
+          echo "### Final decision on new version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_ENV
           echo "version_title=$version_title" >> $GITHUB_ENV
           echo "version_body=$version_body" >> $GITHUB_ENV
@@ -58,80 +70,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Debugging Outputs
+        run: |
+          echo "### Debugging create-release job..."
+          echo "New version: ${{ needs.check-release.outputs.new_version }}"
+          echo "Version title: ${{ needs.check-release.outputs.version_title }}"
+          echo "Version body: ${{ needs.check-release.outputs.version_body }}"
+
       - name: Create GitHub Release and Tag
         run: |
+          echo "### Creating GitHub release..."
           gh release create "${{ needs.check-release.outputs.new_version }}" \
             --title "${{ needs.check-release.outputs.version_title }}" \
             --notes "${{ needs.check-release.outputs.version_body }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-backend:
-    needs: create-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/dseva-backend
-          tags: |
-            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
-      
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: ./dseva-backend
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          target: prod
-
-  build-collector:
-    needs: create-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/collector
-          tags: |
-            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
-      
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: ./collector
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          target: prod
-
 
   # build-frontend:
   #   needs: create-release
