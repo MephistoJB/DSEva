@@ -51,10 +51,13 @@ jobs:
             new_version=""
           fi
 
-          echo "### Debug: Checking new_version output"
           echo "### Final decision on new version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_ENV
+          echo "version_title=$version_title" >> $GITHUB_ENV
+          echo "version_body=$version_body" >> $GITHUB_ENV
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "version_title=$version_title" >> $GITHUB_OUTPUT
+          echo "version_body=$version_body" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
