@@ -5,6 +5,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+ 
+permissions:
+  contents: write  # Erlaubt das Erstellen von Releases
 
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
