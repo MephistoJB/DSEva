@@ -1,5 +1,6 @@
 'use client';
 
+import apiService from "@/app/services/apiService";
 import TableHeader from "./TableHeader";
 import TableRow from "./TableRow";
 import { useEffect, useState } from "react";
@@ -18,21 +19,12 @@ export type RepositoryType = {
 const TableList = ()  => {
     const [repositories, setRepositories] = useState<RepositoryType[]>([]);
      const getRepositories  = async() => {
-        const url= 'http://localhost:8000/api/repositories';
+        const url= '/api/repositories';
 
-        await fetch(url, {
-            method: 'GET',
-        })
-            .then(response => response.json())
-            .then((json)=>{
-                console.log('json', json);
+        const tmpProperties = await apiService.get('/api/repositories');
 
-                setRepositories(json.data);
-            })
-            .catch((error) => {
-                console.log('error', error);
-            });
-            ;
+        setRepositories(tmpProperties.data);
+
     };
 
     useEffect(() => {
@@ -47,7 +39,7 @@ const TableList = ()  => {
         </thead>
         <tbody>
           {repositories.map((repository) => {
-              return <TableRow title={repository.title} key={repository.id}/>
+              return <TableRow repository={repository} key={repository.id} />
           })};
         </tbody>
       </table>

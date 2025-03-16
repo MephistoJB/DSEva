@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+    {
+        "name": "Debug Collector",
+        "type": "python",
+        "request": "attach",
+        "pathMappings": [
+            {
+            "localRoot": "${workspaceFolder}/dseva-backend/collector",
+            "remoteRoot": "/usr/src/collector"
+            }
+        ],
+        "port": 3001,
+        "host": "127.0.0.1",
+      },
+      {
+        "name": "Debug Django",
+        "type": "python",
+        "request": "attach",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/dseva-backend/django",
+            "remoteRoot": "/usr/src/dseva_backend"
+          }
+        ],
+        "port": 3000,
+        "host": "127.0.0.1",
+      }
+    ]
+  }

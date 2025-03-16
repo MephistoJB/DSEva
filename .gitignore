@@ -1,2 +1,14 @@
 
 .DS_Store
+/dseva-backend/collector/__pycache__
+dseva-backend/collector/resttest.py
+/dseva-backend/django/dseva_content/migrations
+/dseva-backend/django/env
+/dseva-backend/django/repository/migrations
+/dseva-backend/django/env
+/dseva-backend/django/env
+dseva-backend/.env.dev
+dseva-backend/.env.dev
+dseva-backend/.env.dev
+dseva-backend/.env.dev
+.env.dev

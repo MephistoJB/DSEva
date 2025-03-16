@@ -8,6 +8,7 @@ services:
       - ./django:/usr/src/dseva_backend
     ports:
       - 8000:8000
+      - 3000:3000
     env_file:
       - ./.env.dev
     depends_on:
@@ -20,6 +21,20 @@ services:
       - POSTGRES_USER=postgresuser
       - POSTGRES_PASSWORD=postgrespassword
       - POSTGRES_DB=dsevadb
+<<<<<<< HEAD
 
+=======
+  collector:
+    build: ./collector
+    #command: python collector.py
+    volumes:
+      - ./collector:/usr/src/collector
+    ports:
+      - 3001:3001
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - web
+>>>>>>> 098b29c (Enabled remote debugging and github sync of the first objects)
 volumes:
   postgres_data:

@@ -7,4 +7,10 @@ djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 pillow==10.2.0
 channels==4.0.0
+<<<<<<< HEAD
 daphne==4.0.0
+=======
+daphne==4.0.0
+django-filter
+debugpy==1.5.1
+>>>>>>> 098b29c (Enabled remote debugging and github sync of the first objects)

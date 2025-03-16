@@ -91,7 +91,8 @@ INSTALLED_APPS = [
 
     'corsheaders',
 
-    'repository'
+    'repository',
+    'dseva_content'
 ]
 
 MIDDLEWARE = [
