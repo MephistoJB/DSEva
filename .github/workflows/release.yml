@@ -30,7 +30,7 @@ jobs:
 
           echo "### Extracting version title..."
           version_title=$(awk -v ver="$latest_version" '
-            $0 ~ ver {getline; if ($0 ~ /^-/) getline; print $0}' releasenotes)
+            $0 ~ ver {getline; while ($0 ~ /^-/) getline; print $0}' releasenotes)
           echo "Version title: $version_title"
 
           echo "### Extracting version body..."
@@ -42,13 +42,13 @@ jobs:
           echo "Latest release on GitHub: $last_release"
 
           if [ -z "$last_release" ]; then
-            echo "No previous release found, using latest version from releasenotes."
-            last_release=$latest_version
-          fi
-
-          if [ -z "$last_release" ] || [ "$latest_version" != "$last_release" ]; then
+            echo "No previous release found, setting new_version to latest_version"
+            new_version=$latest_version
+          elif [ "$latest_version" != "$last_release" ]; then
+            echo "Newer version detected, setting new_version"
             new_version=$latest_version
           else
+            echo "No new version detected, setting new_version to empty"
             new_version=""
           fi
 
