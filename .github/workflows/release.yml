@@ -84,7 +84,7 @@ jobs:
           echo "### Creating GitHub release..."
           gh release create "${{ needs.check-release.outputs.new_version }}" \
             --title "${{ needs.check-release.outputs.new_version }}" \
-            --notes "${{ needs.check-release.outputs.version_title }}\n\n${{ needs.check-release.outputs.version_body }}"
+            --notes "$(echo -e "${{ needs.check-release.outputs.version_title }}\n\n${{ needs.check-release.outputs.version_body }}")"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
