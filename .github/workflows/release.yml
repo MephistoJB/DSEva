@@ -167,17 +167,20 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Upload README to Docker Hub (Backend)
+      - name: Upload README to Docker Hub
         run: |
-          echo "### Uploading README to Docker Hub..."
-          echo "Fetching README content..."
-          cat README.md
-          echo "Updating Docker Hub repository..."
-          curl -X PATCH "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/DSEva-Backend/" \
+          echo "### Fetching README content..."
+          README_CONTENT=$(jq -Rs . < README.md)
+    
+          echo "### Updating Docker Hub repository..."
+          curl -X PATCH "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/dseva-backend/" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
-            --data "{\"full_description\": \"$(cat README.md | jq -Rs .)\"}"
+            -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
+            --data "{\"full_description\": $README_CONTENT}"
+          
           echo "### README successfully uploaded to Docker Hub"
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   build-collector:
     needs: create-release
@@ -194,19 +197,18 @@ jobs:
       
       - name: Upload README to Docker Hub
         run: |
-          echo "### Uploading README to Docker Hub..."
-          echo "Fetching README content..."
-          
-          # Wandelt den README-Inhalt korrekt in JSON-Format um
+          echo "### Fetching README content..."
           README_CONTENT=$(jq -Rs . < README.md)
-
-          echo "Updating Docker Hub repository..."
-          curl -X PATCH "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/DSEva-Collector/" \
+    
+          echo "### Updating Docker Hub repository..."
+          curl -X PATCH "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/dseva-collector/" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
+            -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
             --data "{\"full_description\": $README_CONTENT}"
-
+          
           echo "### README successfully uploaded to Docker Hub"
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Debugging Output der neuen Version
         run: |
@@ -256,17 +258,20 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Upload README to Docker Hub (Collector)
+      - name: Upload README to Docker Hub
         run: |
-          echo "### Uploading README to Docker Hub..."
-          echo "Fetching README content..."
-          cat README.md
-          echo "Updating Docker Hub repository..."
-          curl -X PATCH "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/DSEva-Collector/" \
+          echo "### Fetching README content..."
+          README_CONTENT=$(jq -Rs . < README.md)
+    
+          echo "### Updating Docker Hub repository..."
+          curl -X PATCH "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/dseva-collector/" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
-            --data "{\"full_description\": \"$(cat README.md | jq -Rs .)\"}"
+            -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
+            --data "{\"full_description\": $README_CONTENT}"
+          
           echo "### README successfully uploaded to Docker Hub"
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
 
   # build-frontend:
