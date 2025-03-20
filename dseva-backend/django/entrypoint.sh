@@ -15,4 +15,4 @@ fi
 
 #python manage.py migrate
 
-exec "$@"
+#exec "$@"
