@@ -1,0 +1,29 @@
+#CRAWLER auf Alpha Stadium Bringen
+- Eigene Lokale temporäre Repository Liste für den Collector einführen, um zu tracken bei welchen Repos er schon war und keine Schleife zu erstellen @done
+- Parent Repositories und Forks mitladen @done
+- Konviertere Create zu Create and Update @done
+- neues Datenfeld "neu" im Backend Model einfügen, um neue Repos in der Datenbank zu kennzeichen @done
+- Das Datenfeld neu bei der bestimmung des nächsten Elementes mit berücksichtigen @done
+- getNext dahingehend überarbeiten, dass nur 1 mal pro Tag maximal geprüft wird @done
+- Das Model für Developer ergänzen @done
+- Developer bei den Repositories mitladen @done
+- Repositories beim Developer mitladen @done
+- Watched und Starred Repositories beim Developer mitladen
+- Umwandeln zur Quart Applikation
+- Repositories trennen
+
+#CRAWLER TRANSPORTIEREN
+- Github Workflow bauen @done
+- Production Optionen bestimmen
+- Postgres Datenbank auf Centralserver erstellen
+- PGAdmin auf Centralserver
+- Transport auf Centralserver
+
+#KI
+- Postgres addon für KI
+- RAG aufbauen
+
+Multicollector:
+- Sperre einbauen
+- Timeout für Sperre bei nextElement
+- Alle Sperren löschen beim Starten
