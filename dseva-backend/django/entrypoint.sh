@@ -16,4 +16,5 @@
 #python manage.py migrate
 while true; do
     sleep 100
+done
 #exec "$@"
