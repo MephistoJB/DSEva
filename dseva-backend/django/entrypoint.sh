@@ -14,5 +14,6 @@
 #python manage.py makemigrations
 
 #python manage.py migrate
-python manage.py
+while true; do
+    sleep 100
 #exec "$@"
