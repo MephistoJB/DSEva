@@ -99,7 +99,6 @@ INSTALLED_APPS = [
 
     'corsheaders',
 
-    'repository',
     'dseva_content'
 ]
 
