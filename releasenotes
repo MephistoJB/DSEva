@@ -1,3 +1,6 @@
+v0.1.7 - Bugfixes
+- included migrations
+
 v0.1.6 - Bugfixes
 - entrypoint change
 - removal of repository app
