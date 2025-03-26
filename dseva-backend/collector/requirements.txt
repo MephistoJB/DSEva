@@ -1,4 +1,9 @@
 PyGithub
 requests
+quart
+hypercorn
+httpx
 debugpy
-flask[async]
+pytest
+pytest-asyncio
+watchgod

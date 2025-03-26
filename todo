@@ -27,3 +27,6 @@ Multicollector:
 - Sperre einbauen
 - Timeout für Sperre bei nextElement
 - Alle Sperren löschen beim Starten
+- Register/Unregister Funktion --> automatisches unregister bei neustart des backends
+- Unique Wert für jeden Collector
+- Einstellungen für jeden Collector im Backend speichern

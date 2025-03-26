@@ -1,137 +1,131 @@
 #!/usr/bin/env python
-import os, logging, time, sys
-from flask import Flask
+import os, sys, logging, asyncio, hypercorn.asyncio, debugpy, time  # Core libraries and async server
+from quart import Quart, current_app, request, jsonify, Blueprint, Response  # Quart framework imports
 from threading import Thread
-from restoperations import *
-from githuboperations import *
-#from collector import *
+from routes.frontend import frontend_bp
+from routes.processing import processing_bp
+from services import config
+from watchgod import run_process
 
 
-class Collector(Flask):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.worker_thread = None
+# Create a Quart application instance
+app = Quart(__name__)
 
-    def run(self, host=None, port=None, debug=None, extra_files=None, on_load=None, use_reloader=True, use_debugger=None, use_evalex=None, passthrough_errors=False, ssl_context=None, threaded=False, processes=None, ssl_keyfile=None, ssl_certfile=None):
-        super().run(host=host, port=port, debug=debug, extra_files=extra_files, on_load=on_load, use_reloader=use_reloader, use_debugger=use_debugger, use_evalex=use_evalex, passthrough_errors=passthrough_errors, ssl_context=ssl_context, threaded=threaded, processes=processes, ssl_keyfile=ssl_keyfile, ssl_certfile=ssl_certfile)
-        self.start_worker()
+# Global request queue for handling asynchronous processing
+request_queue = asyncio.Queue()
 
-    def start_worker(self):
-        if not self.worker_thread:
-            self.worker_thread = Thread(target=self.additional_method)
-            self.worker_thread.daemon = True
-            self.worker_thread.start()
+# Register application blueprints for different API functionalities
+#app.register_blueprint(documents_bp)  
+#app.register_blueprint(status_bp)  
+app.register_blueprint(frontend_bp)  
+app.register_blueprint(processing_bp)  
 
-    def startcollector(self):
+# Event for handling server shutdown gracefully
+shutdown_event = asyncio.Event()
+
+""" 
+Gracefully shuts down the Quart server.
+Logs the shutdown event, sets the shutdown flag, 
+waits briefly for cleanup, and exits the process.
+"""
+async def stopServer():
+    logging.info("Server is shutting down...")
+    shutdown_event.set()  # Set shutdown event flag
+    await asyncio.sleep(1)  # Small delay to allow cleanup
+    sys.exit(0)  # Terminate the process
+
+""" 
+Background worker that continuously processes queued requests.
+- Waits for new tasks in `request_queue`
+- Processes each task asynchronously
+- Logs any errors that occur during processing
+"""
+async def background_task():
+    logging.info("Starting background queue processor...")
+
+    while True:
+        queue_entry = await request_queue.get()  # Wait until a new request is available
         try:
-            authenticate()
-
-            run = True
-            while run:
-                rl=getRateLimit()
-                if(rl.remaining - getBuffer() <= 0):
-                    logging.info("Github API limit is reaching. need to wait until " + str(rl.reset))
-                else:
-                    ne = getNextElement()
-                    if(ne):
-                        neGH = getRepo(ne["foreign_id"])
-                        #print(ne)
-                        #print(neGH)
-                        parent = getParent(neGH)
-                        if(parent):
-                            create_and_update_repository(parent)
-                        forks = getForkIDs(neGH)
-                        for fork in forks:
-                            fork["parentGUID"] = ne["id"]
-                            create_and_update_repository(fork)
-                    else:
-                        repo = getFallback()
-                        if repo:
-                            if not getRepository(repo.id):
-                                create_and_update_repository(repo)
-                        else:
-                            print("Bereits alle Repositories überführt. Neuer Fallback benötigt.")
-                            run = False
-
-
-        except Exception as error:
-            raise(error)
+            async with app.app_context():  # Ensure Quart app context is available
+                logging.info(f"Processing queue entry: {queue_entry}") 
+                await app.config["COLLECTOR"].process_queue(queue_entry)  # Call the processing function
+        except Exception as e:
+            logging.error(f"Error processing queue entry: {e}")  # Log any errors
         finally:
-            closeConnection()
+            request_queue.task_done()  # Mark task as completed
 
-# Flask-App-Instanz erstellen
-app = Flask(__name__)
+""" 
+Initializes configurations and services before the server starts.
+- Validates application configuration
+- Initializes the PAPERLESS API connection
+- Sets up the global request queue
+- Starts the background queue processor
+"""
+@app.before_serving
+async def init_before_serving():
+    logging.info("Starting pre-server initialization...")
 
-LOG_LEVEL = os.getenv('LOG_LEVEL', None)
-DEBUG = os.environ.get("DEBUG", "0")
+    app.config["REQUEST_QUEUE"] = request_queue  # Store the request queue in app config
+    # Start the background queue processing task
+    app.config["BACKGROUND_TASK"] = asyncio.create_task(background_task())
+    
+    # Apply configuration settings from the `config` module
+    config.setConfig(app)
+   
+    logging.info("Pre-server initialization complete.")
 
-# Create Logger
-logger = logging.getLogger(__name__)
+""" 
+Main entry point for starting the Quart application.
+- Configures logging
+- Enables remote debugging if `DEBUG=True`
+- Initializes the application
+- Starts the Hypercorn server
+"""
+async def main(debug):
+    logLevel = "DEBUG" if debug == 'True' else "INFO"  # Set log level accordingly
 
-if LOG_LEVEL:
-    if LOG_LEVEL == "ERROR":
-        logger.setLevel(logging.ERROR)
-    elif LOG_LEVEL == "WARNING":
-        logger.setLevel(logging.WARNING)
-    elif LOG_LEVEL == "INFO":
-        logger.setLevel(logging.INFO)
-    elif LOG_LEVEL == "DEBUG":
-        logger.setLevel(logging.DEBUG)
-    else:
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            handlers=[
-                logging.StreamHandler(sys.stdout)
-            ]
-        )
-        logging.error("Log Level not set correctly. Please choose from ERROR, WARNING, INFO or DEBUG")
-else:
-    logger.setLevel(logging.INFO)
+    # Config the Root-Logger
+    logging.basicConfig(
+        level=getattr(logging, logLevel, logging.INFO),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)]
+    )
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-if LOG_LEVEL:
-    logging.info(f"LogLevel is set to {LOG_LEVEL}")
-else:
-    logging.info(f"LogLevel is set to INFO")
+    # Set the LogLevel for the frameworks
+    logging.getLogger("quart").setLevel(getattr(logging, logLevel, logging.INFO))
+    logging.getLogger("hypercorn").setLevel(getattr(logging, logLevel, logging.INFO))
+    logging.getLogger("asyncio").setLevel(getattr(logging, logLevel, logging.INFO))
 
-logging.info(f"Checking Config")
+    logging.info(f"LogLevel is set to {logLevel}")
 
-#TODO ConfigCheck
+    # Enable remote debugging if debug mode is active
+    if debug == 'True':
+        logging.info("Starting Debugpy...")
+        debugpy.listen(("0.0.0.0", 3001))  # Open debugging port 5679
+        logging.info("Waiting for debugger connection...")
+        debugpy.wait_for_client()  # Pause execution until debugger is attached
 
-if(DEBUG and DEBUG=="1"):
-    logging.info(f"DEBUG Mode activated.")
+    logging.info("Starting application initialization...")
 
-app.config['DEBUG'] = DEBUG
+    await init_before_serving()  # Run pre-start initialization tasks
 
-def main():
+    logging.info("Initialization complete, starting server...")
 
-    # start Python Debugger
-    debug = os.environ.get("DEBUG")
-    print(debug)
-    if debug=="1":
-        print(debug=="1")
-        import debugpy
-        debugpy.listen(("0.0.0.0", 3001))
-        print('Attached!')
-    # end Python Debugger
+    # Configure and start the Hypercorn web server
+    conf = hypercorn.Config()
+    conf.bind = ["0.0.0.0:5000"]  # Set the server to listen on port 5000
+    conf.accesslog = "-"  # Enable access logging
+    conf.errorlog = "-"  # Enable error logging
 
-    #startcollector()
-while 1 != 2:
-    time.sleep(2)
+    await hypercorn.asyncio.serve(app, conf)  # Start Quart application with Hypercorn
 
+def debugStart():
+    asyncio.run(main("True"))
+
+# Ensure the application runs when executed as a script
 if __name__ == '__main__':
-    main()
-    #if app.config['DEBUG'] and app.config['DEBUG']=="1":
-    #    import debugpy
-    #    debugpy.listen(("0.0.0.0", 3002))
-    #    logging.info('DebugPy attached!')
-    #    app.run(host='0.0.0.0', port=5000)
-    #else:
-    #    app.run(host='0.0.0.0', port=5000)
+    debug = os.getenv('DEBUG', 'False')  # Fetch debug mode from environment variables
+    if debug == "True":
+        run_process(".", debugStart)
+    else:
+        asyncio.run(main(debug))

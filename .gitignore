@@ -4,3 +4,5 @@
 dseva-backend/collector/resttest.py
 /dseva-backend/django/env
 dseva-backend/.env.secret
+/dseva-backend/collector/routes/__pycache__
+/dseva-backend/collector/services/__pycache__

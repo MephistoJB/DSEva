@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Seite 1{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Hauptinhalt -->
+        <div class="col-md-9">
+            <h1>Willkommen auf Seite 1</h1>
+            <p>Dies ist der individuelle Inhalt für Seite 1.</p>
+        </div>
+
+        <!-- Rechte Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    Sidebar
+                </div>
+                <div class="card-body">
+                    <p>Zusätzliche Infos oder Navigation.</p>
+                    <ul id="next-elements-list" class="list-group mt-2">
+                        <!-- Elemente werden hier dynamisch eingefügt -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
