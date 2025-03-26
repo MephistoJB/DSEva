@@ -1,3 +1,7 @@
+v0.1.8 - Bugfixes
+- Refactoring to enable GUI
+- increase async capa
+
 v0.1.7 - Bugfixes
 - included migrations
 
