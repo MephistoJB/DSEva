@@ -36,7 +36,14 @@ class Backend_API:
     async def getNextElement(self):
         get_next_element_url = self._backend_url + "nextelement/"
         response = requests.get(get_next_element_url)
-        return response.json()["data"]
+        if response != None and response.status_code == 200:
+            data = response.json()["data"]
+            if data == None:
+                return None
+            if  data.get("title","") == "" and data.get("foreign_id","") == "":
+                return None
+            return data
+        return None
 
     async def getRepository(self, id: int):
         get_repositorydetails_url = self._backend_url + str(id) + "/"

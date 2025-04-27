@@ -67,7 +67,7 @@ class Github_API:
         repo = None
         for i in range(0, list.totalCount-1):
             repo = list[i]
-            for j in range (0,len(localrepolist)):
+            for j in range (0,len(self._localrepolist)):
                 if(repo.id == self._localrepolist[j]):
                     repo = None
                 break

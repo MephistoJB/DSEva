@@ -9,7 +9,7 @@ ENV GITHUB_TOKEN=""
 
 WORKDIR /usr/src/collector
 
-RUN apt-get update && apt-get install -y nano curl iputils-ping  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y nano curl iputils-ping dnsutils  && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
 COPY ./requirements.txt .

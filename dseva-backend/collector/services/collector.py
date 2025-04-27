@@ -28,7 +28,7 @@ class Collector:
     async def collect(self, github_api, element):
         backend_api = current_app.config["BACKEND"]
         if(element):
-            if element["type"]=='Developer':
+            if element.get("type","")=='Developer':
                 neGH = github_api.getDev(element["foreign_id"])
                 repos = github_api.getRepoIDs(neGH)
                 for repo in repos:

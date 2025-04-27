@@ -41,6 +41,13 @@ async def processing_loop():
             if current_size < 3:
                 for _ in range(3 - current_size):
                     queue_entry = await current_app.config["BACKEND"].getNextElement()
+                    if queue_entry == None:
+                        github_api = current_app.config["GITHUB_API"]
+                        repo = github_api.getFallback()
+                        if repo:
+                            queue_entry = {"title": repo.name, "foreign_id": repo.id}
+                        else:
+                            logging.error("All repositories grabbed. Need a new fallback")
                     if queue_entry:
                         logging.info("Adding element to processing queue...")
                         await queue.put(queue_entry)

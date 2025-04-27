@@ -75,8 +75,8 @@ def repository_detail(request, id):
 @authentication_classes([])
 @permission_classes([])
 def create_and_update_repository(request):
-    fi = request.POST['foreign_id']
-    
+    fi = [request.POST['foreign_id']]
+    values2 = Repository.objects.all().values()
     repository = Repository.objects.filter(foreign_id=fi).first()
     post_data = dict(request.POST)
     if 'ownerD' in post_data:
@@ -86,8 +86,11 @@ def create_and_update_repository(request):
             developer = Developer.objects.create()
             developer.foreign_id = di
             developer.save()
+        else:
+            developer.new = False
         post_data['ownerD']=developer.id
     if(repository):
+        post_data['new']=False
         form = RepositoryForm(post_data, instance=repository)
     else:
         form = RepositoryForm(post_data)
