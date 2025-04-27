@@ -1,3 +1,9 @@
+v0.1.10 - Version Bump
+- Collector change to Quart
+
+v0.1.9 - Bugfixes
+- Collector change to Quart
+
 v0.1.8 - Bugfixes
 - Refactoring to enable GUI
 - increase async capa
