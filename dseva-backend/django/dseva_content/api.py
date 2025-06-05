@@ -41,7 +41,8 @@ def next_element(request):
             default=1,               # Standardreihenfolge für alles andere
             output_field=models.IntegerField()
         )
-    ).filter(lastVisit__lt=datetime.datetime.now() - datetime.timedelta(days=1)).order_by('new_order', 'lastVisit').first()
+    #).filter(lastVisit__lt=datetime.datetime.now() - datetime.timedelta(days=1)).order_by('new_order', 'lastVisit').first()
+    ).order_by('new_order', 'lastVisit').first()
 
     developer = Developer.objects.annotate(
         new_order=Case(
@@ -54,7 +55,18 @@ def next_element(request):
     #if developer.lastVisit>repository.lastVisit:
     #serializer = RepositoryDetailSerializer(repository)
     #else:
-    serializer = DeveloperDetailSerializer(developer)
+    
+    print('debug', f"Developer with id {developer.foreign_id} lastVisited: {developer.lastVisit}")
+    print('debug', f"Repository {repository.title} with id {repository.foreign_id} lastVisited: {repository.lastVisit}")
+
+    if developer.lastVisit<repository.lastVisit:
+        developer.lastVisit = datetime.datetime.now()
+        developer.save()
+        serializer = DeveloperDetailSerializer(developer)
+    else:
+        repository.lastVisit = datetime.datetime.now()
+        repository.save()
+        serializer = RepositoryDetailSerializer(repository)
     return JsonResponse({
         'data': serializer.data
     })
@@ -85,6 +97,7 @@ def create_and_update_repository(request):
         if not developer:
             developer = Developer.objects.create()
             developer.foreign_id = di
+            developer.lastVisit = datetime.datetime.now()
             developer.save()
         else:
             developer.new = False
@@ -98,6 +111,7 @@ def create_and_update_repository(request):
     if form.is_valid():
         repo = form.save(commit=False)
         repo.ownerD = developer
+        repo.lastVisit = datetime.datetime.now()
         repo.save()
         return JsonResponse({'success': True})
     else:
