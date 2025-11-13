@@ -1,4 +1,4 @@
-v0.1.11 - Bugfix
+v0.1.12 - Bugfix
 - Developer and Repositories were always declared as "new"
 - Ratelimit handling
 - Next Element Handling
