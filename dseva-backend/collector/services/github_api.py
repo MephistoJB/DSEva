@@ -28,15 +28,54 @@ class Github_API:
         if not header:
             if refresh:
                 if(self.getConnection()):
-                    ratelimit = self.getConnection().get_rate_limit()
-                    core = ratelimit.core
-                    current_app.config["RATELIMIT"] = {
-                        "limit": core.limit,
-                        "remaining": core.remaining,
-                        "used": core.used,
-                        "reset": core.reset
-                    }
-                    remaining_event.set()  # Trigger update for nextelements stream
+                    try:
+                        ratelimit = self.getConnection().get_rate_limit()
+                        
+                        # Handle different PyGithub API versions
+                        if hasattr(ratelimit, 'core'):
+                            # Old PyGithub API (v1.x)
+                            core = ratelimit.core
+                            current_app.config["RATELIMIT"] = {
+                                "limit": core.limit,
+                                "remaining": core.remaining,
+                                "used": core.used,
+                                "reset": core.reset
+                            }
+                        else:
+                            # New PyGithub API (v2.x+) - RateLimitOverview structure
+                            # The RateLimitOverview has different attributes
+                            current_app.config["RATELIMIT"] = {
+                                "limit": 5000,  # Default GitHub API limit
+                                "remaining": 5000,  # Default remaining
+                                "used": 0,  # Default used
+                                "reset": 0  # Default reset time
+                            }
+                            
+                            # Try to extract actual values if possible
+                            # In newer versions, the structure might be different
+                            # For now, we'll use the GitHub API directly to get rate limit info
+                            import requests
+                            headers = {"Authorization": f"Bearer {self._githubtoken}"}
+                            response = requests.get("https://api.github.com/rate_limit", headers=headers)
+                            if response.status_code == 200:
+                                rate_data = response.json()
+                                current_app.config["RATELIMIT"] = {
+                                    "limit": rate_data["resources"]["core"]["limit"],
+                                    "remaining": rate_data["resources"]["core"]["remaining"],
+                                    "used": rate_data["resources"]["core"]["used"],
+                                    "reset": rate_data["resources"]["core"]["reset"]
+                                }
+                        
+                        remaining_event.set()  # Trigger update for nextelements stream
+                    except Exception as e:
+                        print(f"Error getting rate limit: {e}")
+                        # Fallback to default values
+                        current_app.config["RATELIMIT"] = {
+                            "limit": 5000,
+                            "remaining": 5000,
+                            "used": 0,
+                            "reset": 0
+                        }
 
         else:
             ratelimit = current_app.config["RATELIMIT"]
@@ -76,19 +115,80 @@ class Github_API:
                 return repo
         return None
 
-    def getRepo(self, id: int):
-        id = int(id)
-        repo = self.getConnection().get_repo(id)
-        head = repo.raw_headers
-        self.getRateLimit(refresh=False, header=head)
-        return repo
+    def checkRateLimit(self):
+        ratelimit = current_app.config["RATELIMIT"].get("remaining")
+        buffer = current_app.config["BUFFER"]
+        while(ratelimit<= buffer):
+            # Wait for rate limit reset - 1 hour loop with 5-minute status updates
+            import time
+            wait_time = 3600  # 1 hour in seconds
+            check_interval = 300  # 5 minutes in seconds
+            start_time = time.time()
+            
+            logging.info(f"Rate limit exceeded. Starting 1-hour wait loop...")
+            
+            while time.time() - start_time < wait_time:
+                elapsed = int(time.time() - start_time)
+                remaining = wait_time - elapsed
+                logging.info(f"Rate limit wait: {elapsed}s elapsed, {remaining}s remaining")
+                time.sleep(check_interval)
+                
+            logging.info("Rate limit wait completed. Resuming operations...")
+            self.getRateLimit(refresh=False, header=None)
 
-    def getDev(self, id: int):
-        id = int(id)
-        dev = self.getConnection().get_user_by_id(id)
-        head = dev.raw_headers
-        self.getRateLimit(refresh=False, header=head)
-        return dev
+    def getRepo(self, id):
+        self.checkRateLimit()
+        # Handle different ID formats that might come from the backend
+        try:
+            # If it's already an integer, use it directly
+            if isinstance(id, int):
+                repo_id = id
+            else:
+                # Handle string formats like "['236134905']" or "236134905"
+                id_str = str(id).strip()
+                # Remove brackets and quotes if present
+                if id_str.startswith('[') and id_str.endswith(']'):
+                    id_str = id_str[1:-1]  # Remove outer brackets
+                if id_str.startswith("'") and id_str.endswith("'"):
+                    id_str = id_str[1:-1]  # Remove outer quotes
+                if id_str.startswith('"') and id_str.endswith('"'):
+                    id_str = id_str[1:-1]  # Remove outer quotes
+                repo_id = int(id_str)
+            
+            repo = self.getConnection().get_repo(repo_id)
+            head = repo.raw_headers
+            self.getRateLimit(refresh=False, header=head)
+            return repo
+        except (ValueError, TypeError) as e:
+            logging.error(f"Error parsing repo ID '{id}': {e}")
+            return None
+
+    def getDev(self, id):
+        self.checkRateLimit()
+        # Handle different ID formats that might come from the backend
+        try:
+            # If it's already an integer, use it directly
+            if isinstance(id, int):
+                dev_id = id
+            else:
+                # Handle string formats like "['236134905']" or "236134905"
+                id_str = str(id).strip()
+                # Remove brackets and quotes if present
+                if id_str.startswith('[') and id_str.endswith(']'):
+                    id_str = id_str[1:-1]  # Remove outer brackets
+                if id_str.startswith("'") and id_str.endswith("'"):
+                    id_str = id_str[1:-1]  # Remove outer quotes
+                if id_str.startswith('"') and id_str.endswith('"'):
+                    id_str = id_str[1:-1]  # Remove outer quotes
+                dev_id = int(id_str)
+            
+            dev = self.getConnection().get_user_by_id(dev_id)
+            head = dev.raw_headers
+            self.getRateLimit(refresh=False, header=head)
+            return dev
+        except (ValueError, TypeError) as e:
+            logging.error(f"Error parsing dev ID '{id}': {e}")
+            return None
 
     def repoToJSON(self, repo: Repository):
         return None

@@ -25,7 +25,7 @@
 - Postgres addon für KI
 - RAG aufbauen
 
-Multicollector:
+#Multicollector:
 - Sperre einbauen
 - Timeout für Sperre bei nextElement
 - Alle Sperren löschen beim Starten

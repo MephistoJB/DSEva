@@ -1,6 +1,6 @@
 from django.forms import ModelForm
 
-from .models import Repository
+from .models import Repository, Developer
 
 
 class RepositoryForm(ModelForm):
@@ -16,4 +16,12 @@ class RepositoryForm(ModelForm):
             #'stars_count',
             #'loc',
             #'files',
+        )
+
+class DeveloperForm(ModelForm):
+    class Meta:
+        model = Developer
+        fields = (
+            'name',
+            'foreign_id'
         )

@@ -40,7 +40,7 @@ class Collector:
                         logging.debug(f"repo {repo['name']} with id {repo['id']} handled successfully") 
                     else:
                         logging.error(f"repo {repo['name']} with id {repo['id']} not handled")
-                success = await backend_api.create_and_update_developer(element)
+                success = await backend_api.create_and_update_developer(neGH)
                 if success:
                     logging.debug(f"developer {element['name']} with id {element['foreign_id']} handled successfully") 
                 else:

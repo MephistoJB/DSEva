@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from dseva_content.models.developer import Developer
 from dseva_content.models.repository import *
 from .serializers import *
-from .forms import RepositoryForm
+from .forms import RepositoryForm, DeveloperForm
 
 @api_view(['GET'])
 @authentication_classes([])
@@ -87,10 +87,13 @@ def repository_detail(request, id):
 @authentication_classes([])
 @permission_classes([])
 def create_and_update_repository(request):
-    fi = [request.POST['foreign_id']]
-    values2 = Repository.objects.all().values()
+    fi = request.POST['foreign_id']
     repository = Repository.objects.filter(foreign_id=fi).first()
+    if(not repository):
+        repository = Repository.objects.filter(foreign_id=[fi]).first()
     post_data = dict(request.POST)
+    post_data['foreign_id'] = fi
+    post_data['title'] = post_data['title'][0]
     if 'ownerD' in post_data:
         di = request.POST.get('ownerD')
         developer = Developer.objects.filter(foreign_id=di).first()
@@ -113,6 +116,43 @@ def create_and_update_repository(request):
         repo.ownerD = developer
         repo.lastVisit = datetime.datetime.now()
         repo.save()
+        return JsonResponse({'success': True})
+    else:
+        error = form.errors
+        print('error', form.errors, form.non_field_errors)
+        return JsonResponse({'errors': form.errors.as_json()}, status=400)
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
+def create_and_update_developer(request):
+    fi = request.POST['foreign_id']
+    developer = Developer.objects.filter(foreign_id=fi).first()
+    if(not developer):
+         developer = Developer.objects.filter(foreign_id=[fi]).first()
+    post_data = dict(request.POST)
+    post_data['foreign_id'] = fi
+    post_data['name'] = post_data['name'][0]
+    
+    # Handle follow relationship if provided
+    #if 'follow' in post_data:
+    #    follow_id = request.POST.get('follow')
+    #    follow_developer = Developer.objects.filter(foreign_id=follow_id).first()
+    #    if follow_developer:
+    #        post_data['follow'] = follow_developer.id
+    #    else:
+    #         # Remove follow if developer doesn't exist
+    #         post_data.pop('follow', None)
+    
+    if developer:
+        post_data['new'] = False
+        form = DeveloperForm(post_data, instance=developer)
+    else:
+        form = DeveloperForm(post_data)
+    if form.is_valid():
+        dev = form.save(commit=False)
+        dev.lastVisit = datetime.datetime.now()
+        dev.save()
         return JsonResponse({'success': True})
     else:
         error = form.errors

@@ -1,6 +1,6 @@
 from typing import List
 import logging, requests, os, json
-from github import Repository # type: ignore
+from github import Repository, NamedUser # type: ignore
 
 class Backend_API:
     def __init__(self, backend_url, logger: logging.Logger):
@@ -31,6 +31,12 @@ class Backend_API:
     async def create_developer(self, data: dict):
         create_developer_url = self._backend_url + "developer/"
         response = requests.post(create_developer_url, data = data)
+        return response.json()
+    
+    async def create_and_update_developer(self, dev: NamedUser):
+        data = {"name": dev.login, "foreign_id": dev.id}
+        create_and_update_developer_url = self._backend_url + "create_and_update_developer/"
+        response = requests.post(create_and_update_developer_url, data=data)
         return response.json()
 
     async def getNextElement(self):

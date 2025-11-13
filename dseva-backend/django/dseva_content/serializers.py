@@ -29,10 +29,10 @@ class RepositoryDetailSerializer(serializers.ModelSerializer):
 
 class DeveloperDetailSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Repository
+        model = Developer
         fields = (
             'id',
-            'title',
+            'name',
             'foreign_id',
             'firstVisit',
             'lastVisit',

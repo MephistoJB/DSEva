@@ -1,5 +1,14 @@
 v0.1.11 - Bugfix
 - Developer and Repositories were always declared as "new"
+- Ratelimit handling
+- Next Element Handling
+- Backend API Handling
+- Frontend Handling
+- Collector Handling
+- Collector Handling
+
+v0.1.11 - Bugfix
+- Developer and Repositories were always declared as "new"
 
 v0.1.10 - Version Bump
 - Collector change to Quart
